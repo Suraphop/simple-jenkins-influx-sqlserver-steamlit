@@ -1,0 +1,3 @@
+docker-compose -f docker-compose-build.yml build --no-cache
+docker run --restart=always -d --name demo-data-project mic/demo-data-project:1.0.0
+docker logs -f b7498
