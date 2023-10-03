@@ -466,3 +466,5 @@ with tab6:
     st.header("LOG")
     if os.environ["INITIAL_DB"] == "True":
         log_sqlserver(st,os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE_LOG"])
+    else:
+        st.error('DB NOT INITIAL!', icon="❌")
