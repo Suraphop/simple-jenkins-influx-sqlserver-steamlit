@@ -34,6 +34,7 @@ def create_table(st,server,user_login,password,database,table,table_columns):
             cnxn.commit()
             cursor.close()
             st.success('CREATE TABLE SUCCESSFULLY!', icon="✅")
+            return True
         except Exception as e:
             if 'There is already an object named' in str(e):
                 st.error('TABLE is already an object named ', icon="❌")
@@ -41,6 +42,7 @@ def create_table(st,server,user_login,password,database,table,table_columns):
                 st.error('define columns mistake', icon="❌")
             else:
                 st.error('Error'+str(e), icon="❌")
+            return False
 
 def drop_table(st,server,user_login,password,database,table):
         #connect to db
@@ -320,11 +322,12 @@ with tab3:
             st.write("PLEASE CONFIRM CONFIG SETUP BEFORE INITIAL")
             initial_but = st.button("INITIAL")
             if initial_but:
-                create_table(st,os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE"],os.environ["TABLE_COLUMNS"])
-                create_table(st,os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE_LOG"],os.environ["TABLE_COLUMNS_LOG"])
-                os.environ["INITIAL_DB"] = "True"
-                dotenv.set_key(dotenv_file,"INITIAL_DB",os.environ["INITIAL_DB"])
-                st.experimental_rerun()
+                result_1 = create_table(st,os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE"],os.environ["TABLE_COLUMNS"])
+                result_2 = create_table(st,os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE_LOG"],os.environ["TABLE_COLUMNS_LOG"])
+                if result_1 and result_2 is not False:
+                    os.environ["INITIAL_DB"] = "True"
+                    dotenv.set_key(dotenv_file,"INITIAL_DB",os.environ["INITIAL_DB"])
+                    st.experimental_rerun()
         else:
             st.success('DB CREATED!', icon="✅")
             with st.expander("DELETE DB"):
