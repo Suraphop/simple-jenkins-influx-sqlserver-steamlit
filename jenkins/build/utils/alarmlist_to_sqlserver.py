@@ -14,26 +14,21 @@ from datetime import datetime
 class PREPARE:
 
 
-    def __init__(self,server,database,user_login,password,table,table_columns,table_log,table_columns_log,line_notify_token,influx_server,influx_database,influx_user_login,influx_password,column_names,mqtt_topic,initial_db,line_notify_flag):
+    def __init__(self,path,server,database,user_login,password,table,table_log,line_notify_token,initial_db,line_notify_flag):
+        self.path = path
         self.server = server
         self.database = database
         self.user_login = user_login
         self.password = password
         self.table_log = table_log
         self.table = table
-        self.table_columns = table_columns
-        self.table_columns_log = table_columns_log
         self.df = None
         self.df_insert = None
         self.line_notify_token = line_notify_token
-        self.influx_server = influx_server
-        self.influx_database = influx_database
-        self.influx_user_login = influx_user_login
-        self.influx_password = influx_password
-        self.column_names = column_names
-        self.mqtt_topic = mqtt_topic
         self.initial_db = initial_db
         self.line_notify_flag = line_notify_flag
+        self.path_list = None
+        self.path_now = None
 
     def stamp_time(self):
         now = datetime.now()
@@ -108,59 +103,92 @@ class PREPARE:
             self.alert_line("Danger! cannot insert log table")
             self.info_msg(self.log_to_db.__name__,e)
             sys.exit()
- 
 
-class INFLUX_TO_SQLSERVER(PREPARE):
-    def __init__(self,server,database,user_login,password,table,table_columns,table_log,table_columns_log,influx_server,influx_database,influx_user_login,influx_password,column_names,mqtt_topic,initial_db,line_notify_flag,line_notify_token=None):
-        super().__init__(server,database,user_login,password,table,table_columns,table_log,table_columns_log,line_notify_token,influx_server,influx_database,influx_user_login,influx_password,column_names,mqtt_topic,initial_db,line_notify_flag)        
 
-    def lastone(self) :
-      try:
-          result_lists = []
-          client = InfluxDBClient(self.influx_server, 8086, self.influx_user_login,self.influx_password, self.influx_database)
-          mqtt_topic_value = list(str(self.mqtt_topic).split(","))
-          for i in range(len(mqtt_topic_value)):
-              query = f"select time,topic,{self.column_names} from mqtt_consumer where topic = '{mqtt_topic_value[i]}' order by time desc limit 1"
-              result = client.query(query)
-              if list(result):
-                result = list(result)[0][0]
-                result_lists.append(result)
-                result_df = pd.DataFrame.from_dict(result_lists)
-                self.df = result_df
-              else:
-                print("influx no data")
-      except Exception as e:
-          self.error_msg(self.lastone.__name__,"cannot query influxdb",e)
+class ALARMLIST(PREPARE):
+
     
-    def edit_col(self):
-        try:
-            df = self.df.copy()
-            df_split = df['topic'].str.split('/', expand=True)
-            df['mc_no'] = df_split[2].values
-            df['process'] = df_split[1].values
-            df.drop(columns=['topic'],inplace=True)
-            df.rename(columns = {'time':'data_timestamp'}, inplace = True)
-            df["data_timestamp"] =   pd.to_datetime(df["data_timestamp"]).dt.tz_convert(None)
-            df["data_timestamp"] = df["data_timestamp"] + pd.DateOffset(hours=7)    
-            df["data_timestamp"] = df['data_timestamp'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
-            self.df_insert = df
-        except Exception as e:
-            self.error_msg(self.edit_col.__name__,"cannot edit dataframe data",e)
+    def __init__(self,path,server,database,user_login,password,table,table_log,initial_db,line_notify_flag,line_notify_token=None):
+        super().__init__(path,server,database,user_login,password,table,table_log,line_notify_token,initial_db,line_notify_flag)        
 
+    def read_path(self):
+        path_list = []
+        file_extension = '.txt'
+        for root,dirs,files in os.walk(self.path):
+            for name in files: 
+                if name.endswith(file_extension):    
+                    file_path = os.path.join(root,name)
+                    path_list.append(file_path)
+        if len(path_list) == 0:
+            self.error_msg(self.read_path.__name__,"read path function: csv file not found","check csv file")
+        else: 
+            self.path_list = path_list
+            self.info_msg(self.read_path.__name__,f"found: {len(path_list)} file")
+
+    def read_data(self):
+        try:
+            df = pd.read_csv(self.path_now,sep=",")
+            df.dropna(inplace=True)
+            
+            df['time_diff'] = '' # add time diff
+            for i in range(len(df['restored'])):
+                date_stored = datetime.strptime(df['restored'][i], '%Y-%m-%d %H:%M:%S')
+                date_occurred = datetime.strptime(df['occurred'][i], '%Y-%m-%d %H:%M:%S')
+                df['time_diff'][i] = pd.Timedelta(date_stored - date_occurred).seconds
+
+            df['mc_no'] = self.path_now.split("_")[-1].split(".")[0] # add filename to column
+
+            self.df = df
+            self.info_msg(self.read_data.__name__,f"csv to pd")
+        except Exception as e:
+            self.error_msg(self.read_data.__name__,"pd cannot read csv file",e)
+
+    def query_df(self,query):
+        try:
+            connection_string = "DRIVER={ODBC Driver 17 for SQL Server};SERVER="+self.server+";DATABASE="+self.database+";UID="+self.user_login+";PWD="+self.password+""
+            connection_url = engine.URL.create("mssql+pyodbc", query={"odbc_connect": connection_string})
+            engine1 = create_engine(connection_url)
+            with engine1.begin() as conn:
+                query_df = pd.read_sql_query(text(query), conn)
+                self.info_msg(self.query_df.__name__,f"query df success")
+                return query_df
+        except Exception as e:
+                self.error_msg(self.query_df.__name__,"cannot select with sql code",e)
+
+    def query_duplicate(self):
+        mc_no = self.path_now.split("_")[-1].split(".")[0]
+        return """SELECT TOP(3000) 
+                [topic] ,
+                CONVERT(VARCHAR, [occurred],20) AS 'occurred',
+                [mc_no] 
+            FROM ["""+self.database+"""].[dbo].["""+self.table+"""] 
+            where [mc_no] = '"""+mc_no+"""' 
+            order by [registered_at] desc"""
+        
+    def check_duplicate(self):
+        try:
+            df_from_db = self.query_df(self.query_duplicate())
+            df_right_only = pd.merge(df_from_db,self.df , on = ["topic","occurred","mc_no"], how = "right", indicator = True) 
+            df_right_only = df_right_only[df_right_only['_merge'] == 'right_only'].drop(columns=['_merge'])
+            if df_right_only.empty:              
+                self.info_msg(self.check_duplicate.__name__,f"data is not new for update")
+            else:
+                self.df_insert = df_right_only
+                self.info_msg(self.check_duplicate.__name__,f"we have data new")
+                return constant.STATUS_OK
+        except Exception as e:
+            self.error_msg(self.check_duplicate.__name__,"cannot select with sql code",e)
+    
     def df_to_db(self):
         #connect to db
-        init_list = ['mc_no','process']
-        insert_db_value = self.column_names.split(",")
-        col_list = init_list+insert_db_value
-
+        mcstatus_list = ['topic','occurred','restored','time_diff','mc_no']
         cnxn,cursor=self.conn_sql()
-      
         try:
             df = self.df_insert
             for index, row in df.iterrows():
                 value = None
-                for i in range(len(col_list)):
-                    address = col_list[i]
+                for i in range(len(mcstatus_list)):
+                    address = mcstatus_list[i]
                     if value == None:
                         value = ",'"+str(row[address])+"'"
                     else:
@@ -185,13 +213,13 @@ class INFLUX_TO_SQLSERVER(PREPARE):
 
     def run(self):
         self.stamp_time()
-        if self.initial_db == 'True':
-            self.lastone()
-            self.edit_col()
-            self.df_to_db()
-            self.ok_msg(self.df_to_db.__name__)
-        else:
-            print("db is not initial yet")
+        self.read_path()
+        for i in range(len(self.path_list)):
+            self.path_now = self.path_list[i]
+            self.read_data()
+            if self.check_duplicate() == constant.STATUS_OK:
+                  self.df_to_db()    
+        self.ok_msg(self.df_to_db.__name__)
 
 if __name__ == "__main__":
     print("must be run with main")
