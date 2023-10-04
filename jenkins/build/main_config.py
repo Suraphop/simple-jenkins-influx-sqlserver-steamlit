@@ -514,6 +514,23 @@ def dataflow_test():
                 st.error("Error :"+str(e))
         st.markdown("---")
 
+def preview_production_sqlserver(server,user_login,password,database,table,mc_no,process):
+        #connect to db
+        cnxn = pymssql.connect(server,user_login,password,database)
+        cursor = cnxn.cursor(as_dict=True)
+        # create table
+        try:
+            cursor.execute(f'''SELECT TOP(20) * FROM {table} where mc_no = '{mc_no}' and process = '{process}' order by registered_at desc''')
+            data=cursor.fetchall()
+            cursor.close()
+            if len(data) != 0:
+                df=pd.DataFrame(data)
+                st.dataframe(df,width=1500)
+            else:
+                st.error('Error: SQL SERVER NO DATA', icon="❌")
+        except Exception as e:
+            st.error('Error'+str(e), icon="❌")
+
 def dataflow_production_sql():
         st.caption("SQLSERVER")
 
@@ -532,7 +549,7 @@ def dataflow_production_sql():
             if preview_sqlserver_but:
                 mc_no = preview_sqlserver_selectbox.split("/")[-1]
                 process = preview_sqlserver_selectbox.split("/")[-2]
-                preview_sqlserver(st,os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE"],mc_no,process)
+                preview_production_sqlserver(os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE"],mc_no,process)
         st.markdown("---")
 
 def dataflow_mcstatus_file():
