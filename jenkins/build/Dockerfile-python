@@ -39,6 +39,7 @@ EXPOSE 8501
 
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
 
+RUN chmod a+x ./crontab
 RUN chmod a+x ./start.sh
 
 CMD ["./start.sh"]
