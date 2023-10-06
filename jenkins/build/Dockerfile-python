@@ -41,5 +41,6 @@ HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
 
 RUN chmod a+x ./crontab
 RUN chmod a+x ./start.sh
+RUN chmod a+x ./run_crontab.sh
 
 CMD ["./start.sh"]

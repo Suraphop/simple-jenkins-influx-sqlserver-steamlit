@@ -628,8 +628,7 @@ def main_layout():
 
     st.title("MACHINE DATA TO DB CONFIG")
 
-    #tab1, tab2 , tab3 ,tab4 , tab5 , tab6 , tab7 = st.tabs(["⚙️ PROJECT CONFIG", "🔑 DB CONNECTION", "📂 DB CREATE", "🔔 ALERT", "🔍 DATAFLOW PREVIEW","📝LOG","🕞SCHEDULE"])
-    tab1, tab2 , tab3 ,tab4 , tab5 , tab6 = st.tabs(["⚙️ PROJECT CONFIG", "🔑 DB CONNECTION", "📂 DB CREATE", "🔔 ALERT", "🔍 DATAFLOW PREVIEW","📝LOG"])
+    tab1, tab2 , tab3 ,tab4 , tab5 , tab6 , tab7 = st.tabs(["⚙️ PROJECT CONFIG", "🔑 DB CONNECTION", "📂 DB CREATE", "🔔 ALERT", "🔍 DATAFLOW PREVIEW","📝LOG","🕞SCHEDULE"])
     
     with tab1:
         config_project()
@@ -676,27 +675,28 @@ def main_layout():
     with tab6:
         logging()
 
-    # with tab7:
-    #     crontab_value = st.selectbox('Select Schedule',('Every 1 minute', 'Hourly'))
-    #     crontab_but = st.button("SUBMIT")
-    #     st.error("DANGER!!! RESTART CONTAINTER AFTER SUBMIT")
+    with tab7:
+        crontab_value = st.selectbox('Select Schedule',('Every 1 minute', 'Hourly'))
+        crontab_but = st.button("SUBMIT")
         
-    #     st.markdown("---")
-    #     st.subheader("READ CRONTAB")
-    #     st.markdown("---")
-    #     st.write(crontab_read())
-    #     st.markdown("---")
-    #     if crontab_but:
-    #             if crontab_value == 'Every 1 minute':
-    #                 crontab_delete()
-    #                 crontab_every_minute()
-    #                 st.experimental_rerun()
-    #             elif crontab_value == 'Hourly':
-    #                 crontab_delete()
-    #                 crontab_every_hr()
-    #                 st.experimental_rerun()
-    #             else:
-    #                 st.error("Error: crontab unknown")
+        st.markdown("---")
+        st.subheader("READ CRONTAB")
+        st.markdown("---")
+        st.write(crontab_read())
+        st.markdown("---")
+        if crontab_but:
+                if crontab_value == 'Every 1 minute':
+                    crontab_delete()
+                    crontab_every_minute()
+                    subprocess.call(['sh', './run_crontab.sh'])
+                    st.experimental_rerun()
+                elif crontab_value == 'Hourly':
+                    crontab_delete()
+                    crontab_every_hr()
+                    subprocess.call(['sh', './run_crontab.sh'])
+                    st.experimental_rerun()
+                else:
+                    st.error("Error: crontab unknown")
         
 if __name__ == "__main__":
     dotenv_file = dotenv.find_dotenv()
