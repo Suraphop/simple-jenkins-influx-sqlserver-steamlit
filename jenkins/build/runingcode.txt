@@ -1,3 +1,5 @@
 docker-compose -f docker-compose-build.yml build --no-cache
 docker run --restart=always -d -p 8501:8501 --name demo-data-project mic/demo-data-project:1.0.0
+docker run --restart=always -d -v D:/ftp/data/data_mcstatus:/data/data_mcstatus  -p 8502:8501 --name mcstatus-data-project mic/mcstatus-project:1.0.0
+docker run --restart=always -d -v D:/ftp/data/data_alarmlist:/data/data_alarmlist  -p 8503:8501 --name alarmlist-data-project mic/alarmlist-project:1.0.0
 docker logs -f b7498
