@@ -109,160 +109,214 @@ def log_sqlserver(st,server,user_login,password,database,table):
             st.error('Error'+str(e), icon="❌")
 
 def config_project():
+
     st.header("PROJECT")
+
     project_name = str(os.environ["TABLE"]).split("_")[-1]
+    table_name = str(os.environ["TABLE"])
+    table_log_name = str(os.environ["TABLE_LOG"])
 
-    cols = st.columns(2)
-    project_name_input = cols[0].text_input('Project Name', project_name)
-    project_type_list = list(str(os.environ["PROJECT_TYPE_LIST"]).split(","))
-    indexs= project_type_list.index(os.environ["PROJECT_TYPE"])
-    project_type_value = cols[0].selectbox("Project type",project_type_list,placeholder="select project type...",index=indexs)
+    with st.form("config_project"):
 
-    os.environ["TABLE"] = "DATA_"+str(project_type_value)+"_"+str(project_name_input.upper())
-    os.environ["TABLE_LOG"] = "LOG_"+str(project_type_value)+"_"+str(project_name_input.upper())
-    os.environ["PROJECT_TYPE"] = project_type_value
+        col1,col2 = st.columns(2)
 
-    dotenv.set_key(dotenv_file,"TABLE",os.environ["TABLE"])
-    dotenv.set_key(dotenv_file,"TABLE_LOG",os.environ["TABLE_LOG"])
-    dotenv.set_key(dotenv_file,"PROJECT_TYPE",os.environ["PROJECT_TYPE"])
+        with col1:
+            project_name_input = st.text_input('Process Name', project_name,key="project_name_input")
 
-    cols[1].text("PREVIEW ")
-    cols[1].text("TABLE NAME: "+str(os.environ["TABLE"]))
-    cols[1].text("TABLE LOG NAME: "+str(os.environ["TABLE_LOG"]))
+            project_type_list = list(str(os.environ["PROJECT_TYPE_LIST"]).split(","))
+            indexs= project_type_list.index(os.environ["PROJECT_TYPE"])
+            project_type_value = st.selectbox("Project type",project_type_list,placeholder="select project type...",index=indexs)
+
+        submitted = st.form_submit_button("INITIAL")
+        if submitted:
+            os.environ["TABLE"] = "DATA_"+str(project_type_value)+"_"+str(project_name_input.upper())
+            os.environ["TABLE_LOG"] = "LOG_"+str(project_type_value)+"_"+str(project_name_input.upper())
+            os.environ["PROJECT_TYPE"] = project_type_value
+            os.environ["INIT_PROJECT"] = "True"
+
+            dotenv.set_key(dotenv_file,"TABLE",os.environ["TABLE"])
+            dotenv.set_key(dotenv_file,"TABLE_LOG",os.environ["TABLE_LOG"])
+            dotenv.set_key(dotenv_file,"PROJECT_TYPE",os.environ["PROJECT_TYPE"])
+            dotenv.set_key(dotenv_file,"INIT_PROJECT",os.environ["INIT_PROJECT"])
+
+            st.rerun()
+        
+        with col2:
+            st.text("PREVIEW ")
+            st.text("TABLE NAME: "+table_name)
+            st.text("TABLE LOG NAME: "+table_log_name)
 
     st.markdown("---")
 
-def config_mqtt():
+def config_mqtt_add():
+
     st.header("MQTT TOPIC REGISTRY")
-    mqtt_registry = list(str(os.environ["MQTT_TOPIC"]).split(","))
-    cols = st.columns(2)
 
-    cols[1].text("PREVIEW ")
-    cols[1].text("MQTT TOPIC REGISTRY: "+str(os.environ["MQTT_TOPIC"]))   
+    with st.form("config_mqtt_add"):
 
-    cols[0].caption("Topic: division/process/machine_no")
-
-    add_new_mqtt = cols[0].text_input("Add a new mqtt ","")
-    add_new_mqtt_but = cols[0].button("Add MQTT", type="secondary")
-
-    mqtt_value = None
-
-    if add_new_mqtt and add_new_mqtt_but:
-        mqtt_registry.append(add_new_mqtt)
-        for i in range(len(mqtt_registry)):
-            if mqtt_value == None:
-                mqtt_value = mqtt_registry[i]
-            else:
-                mqtt_value = str(mqtt_value)+","+mqtt_registry[i]
-
-        os.environ["MQTT_TOPIC"] = mqtt_value
-        dotenv.set_key(dotenv_file,"MQTT_TOPIC",os.environ["MQTT_TOPIC"])
-
-        st.success('Done!', icon="✅")
-        time.sleep(0.5)
-        st.experimental_rerun()
-   
-    option_mqtt = cols[0].selectbox(
-                "Delete mqtt",
-                mqtt_registry,
-                index=None,
-                placeholder="select sensor...",
-                    )
-    cols = st.columns(5)
-    
-    if option_mqtt:
-        delete_mqtt = cols[0].button("Delete MQTT", type="primary")
         mqtt_value = None
+        mqtt_registry = list(str(os.environ["MQTT_TOPIC"]).split(","))
 
-        if delete_mqtt:
-            if len(mqtt_registry)>1:
-                mqtt_registry.remove(option_mqtt)
+        col1,col2 = st.columns(2)
+        
+        with col1:
+            add_new_mqtt = st.text_input("Add a new mqtt (topic: division/process/machine_no)","",key="add_new_mqtt_input")
+            add_new_mqtt_but = st.form_submit_button("Add MQTT", type="secondary")
+
+            if add_new_mqtt and add_new_mqtt_but:
+                mqtt_registry.append(add_new_mqtt)
                 for i in range(len(mqtt_registry)):
                     if mqtt_value == None:
                         mqtt_value = mqtt_registry[i]
-
                     else:
                         mqtt_value = str(mqtt_value)+","+mqtt_registry[i]
 
                 os.environ["MQTT_TOPIC"] = mqtt_value
-                dotenv.set_key(dotenv_file,"MQTT_TOPIC",os.environ["MQTT_TOPIC"])
-                st.success('Deleted!', icon="✅")
+                dotenv.set_key(dotenv_file,"MQTT_TOPIC",os.environ["MQTT_TOPIC"])               
+
+                st.success('Done!', icon="✅")
                 time.sleep(0.5)
-                st.experimental_rerun()
-            else:
-                st.error('Cannot delete,sensor regisry must have at least one!', icon="❌")
+                st.rerun()
+
+        with col2:
+            st.text("PREVIEW ")
+            st.text("MQTT TOPIC REGISTRY: "+str(os.environ["MQTT_TOPIC"]))   
+
+def config_mqtt_delete():
+
+    with st.form("config_mqtt_delete"):
+
+        mqtt_value = None
+        mqtt_registry = list(str(os.environ["MQTT_TOPIC"]).split(","))
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+    
+            option_mqtt = st.multiselect(
+                        'Delete mqtt',
+                        mqtt_registry,placeholder="select mqtt...")
+
+            delete_mqtt = st.form_submit_button("Delete MQTT", type="primary")
+
+            if delete_mqtt:
+                len_mqtt_registry = len(mqtt_registry)
+                len_option_mqtt = len(option_mqtt)
+                if len_option_mqtt<len_mqtt_registry:
+                    
+                    for i in range(len(option_mqtt)):
+                        mqtt_registry.remove(option_mqtt[i])
+
+                    for i in range(len(mqtt_registry)):
+                        if mqtt_value == None:
+                            mqtt_value = mqtt_registry[i]
+                        else:
+                            mqtt_value = str(mqtt_value)+","+mqtt_registry[i]
+
+                    os.environ["MQTT_TOPIC"] = mqtt_value
+                    dotenv.set_key(dotenv_file,"MQTT_TOPIC",os.environ["MQTT_TOPIC"])
+                    st.success('Deleted!', icon="✅")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error('Cannot delete,sensor regisry must have at least one!', icon="❌")
 
     st.markdown("---")
 
-def config_sensor_registry():
+def config_sensor_registry_add():
+
     st.header("SENSOR REGISTRY")
-    sensor_registry = list(str(os.environ["COLUMN_NAMES"]).split(","))
-    cols = st.columns(2)
 
-    cols[1].text("PREVIEW ")
-    cols[1].text("SENSOR REGISTRY: "+str(os.environ["COLUMN_NAMES"]))   
-    cols[1].text("DATATYPE: "+str(os.environ["TABLE_COLUMNS"]))
+    with st.form("config_sensor_registry_add"):
 
-    add_new_input = cols[0].text_input("Add a new sensor ","")
-    add_new_but = cols[0].button("ADD SENSOR", type="secondary")
-    value = None
-    table_column_value = "registered_at datetime,mc_no varchar(10),process varchar(10)"
-
-    if add_new_input and add_new_but:
-        sensor_registry.append(add_new_input)
-        for i in range(len(sensor_registry)):
-            if value == None :
-                value = sensor_registry[i]
-         
-            else:
-                value = str(value)+","+sensor_registry[i]
-            table_column_value = table_column_value+","+sensor_registry[i] + " varchar(10)"
-     
-        os.environ["TABLE_COLUMNS"] = table_column_value
-        os.environ["COLUMN_NAMES"] = value
-
-        dotenv.set_key(dotenv_file,"COLUMN_NAMES",os.environ["COLUMN_NAMES"])
-        dotenv.set_key(dotenv_file,"TABLE_COLUMNS",os.environ["TABLE_COLUMNS"])
-
-        st.success('Done!', icon="✅")
-        time.sleep(0.5)
-        st.experimental_rerun()
-   
-    option = cols[0].selectbox(
-   "Delete sensor",
-   sensor_registry,
-   index=None,
-   placeholder="select sensor...",
-    )
-    cols = st.columns(5)
-    
-    if option:
-        delete = cols[0].button("Delete sensor", type="primary")
-        value = None
+        sensor_value = None
+        sensor_registry = list(str(os.environ["COLUMN_NAMES"]).split(","))
         table_column_value = "registered_at datetime,mc_no varchar(10),process varchar(10)"
 
-        if delete:
-            if len(sensor_registry)>1:
-                sensor_registry.remove(option)
+        col1,col2 = st.columns(2)
+        
+        with col1:
+            add_new_sensor = st.text_input("Add a sensor address","",key="add_new_sensor_input")
+            add_new_sensor_but = st.form_submit_button("Add SENSOR", type="secondary")
+
+            if add_new_sensor and add_new_sensor_but:
+                sensor_registry.append(add_new_sensor)
                 for i in range(len(sensor_registry)):
-                    if value == None :
-                        value = sensor_registry[i]
+                    if sensor_value == None:
+                        sensor_value = sensor_registry[i]
                     else:
-                        value = str(value)+","+sensor_registry[i]
+                        sensor_value = str(sensor_value)+","+sensor_registry[i]
                     table_column_value = table_column_value+","+sensor_registry[i] + " varchar(10)"
 
                 os.environ["TABLE_COLUMNS"] = table_column_value
-                os.environ["COLUMN_NAMES"] = value
+                os.environ["COLUMN_NAMES"] = sensor_value
+
                 dotenv.set_key(dotenv_file,"COLUMN_NAMES",os.environ["COLUMN_NAMES"])
-                dotenv.set_key(dotenv_file,"TABLE_COLUMNS",os.environ["TABLE_COLUMNS"])
-                st.success('Deleted!', icon="✅")
+                dotenv.set_key(dotenv_file,"TABLE_COLUMNS",os.environ["TABLE_COLUMNS"])            
+
+                st.success('Done!', icon="✅")
                 time.sleep(0.5)
-                st.experimental_rerun()
-            else:
-                st.error('Cannot delete,sensor regisry must have at least one!', icon="❌")
+                st.rerun()
+
+        with col2:
+            st.text("PREVIEW ")
+            st.text("SENSOR REGISTRY: "+str(os.environ["COLUMN_NAMES"]))
+            st.text("DATATYPE: "+str(os.environ["TABLE_COLUMNS"]))
+
+def config_sensor_registry_delete():
+
+    with st.form("config_sensor_registry_delete"):
+
+        sensor_value = None
+        sensor_registry = list(str(os.environ["COLUMN_NAMES"]).split(","))
+        table_column_value = "registered_at datetime,mc_no varchar(10),process varchar(10)"
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+    
+            option_sensor = st.multiselect(
+                        'Delete sensor',
+                        sensor_registry,placeholder="select sensor...")
+
+            delete_sensor = st.form_submit_button("Delete SENSOR", type="primary")
+
+            if delete_sensor:
+                len_sensor_registry = len(sensor_registry)
+                len_option_sensor = len(option_sensor)
+                if len_option_sensor<len_sensor_registry:
+                    
+                    for i in range(len(option_sensor)):
+                        sensor_registry.remove(option_sensor[i])
+
+                    for i in range(len(sensor_registry)):
+                        if sensor_value == None:
+                            sensor_value = sensor_registry[i]
+                        else:
+                            sensor_value = str(sensor_value)+","+sensor_registry[i]
+
+                    os.environ["TABLE_COLUMNS"] = table_column_value
+                    os.environ["COLUMN_NAMES"] = sensor_value
+                    dotenv.set_key(dotenv_file,"COLUMN_NAMES",os.environ["COLUMN_NAMES"])
+                    dotenv.set_key(dotenv_file,"TABLE_COLUMNS",os.environ["TABLE_COLUMNS"])
+
+                    st.success('Deleted!', icon="✅")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error('Cannot delete,sensor regisry must have at least one!', icon="❌")
+
+
     st.markdown("---")
 
 def config_db_connect(env_headers):
+    if env_headers == "SQLSERVER":
+        form_name = "config_db_connect_sql"
+    elif env_headers == "INFLUXDB":
+        form_name = "config_db_connect_influx"
+
+    with st.form(form_name):
+
         total_env_list = None
         if env_headers == "SQLSERVER":
             total_env_list = sql_server_env_lists = ["SERVER","DATABASE","USER_LOGIN","PASSWORD"]
@@ -287,12 +341,12 @@ def config_db_connect(env_headers):
 
             if env_headers == "SQLSERVER":
 
-                sql_check_but = cols[0].button("CONECTION CHECK",key="sql_check")
+                sql_check_but = cols[0].form_submit_button("CONECTION CHECK")
                 if sql_check_but:
                     conn_sql(st,os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"])
 
             elif env_headers == "INFLUXDB":
-                influx_check_but = cols[0].button("CONECTION CHECK",key="influx_check")
+                influx_check_but = cols[0].form_submit_button("CONECTION CHECK")
                 if influx_check_but:
                     try:
                         client = InfluxDBClient(os.environ["INFLUX_SERVER"], 8086, os.environ["INFLUX_USER_LOGIN"], os.environ["INFLUX_PASSWORD"], os.environ["INFLUX_DATABASE"])
@@ -303,7 +357,7 @@ def config_db_connect(env_headers):
             else:
                 st.error('Dont have the connection!', icon="❌")
 
-            st.markdown("---")
+    st.markdown("---")
 
 def config_initdb():
         st.header("DB STATUS")
@@ -633,15 +687,22 @@ def main_layout():
     with tab1:
         config_project()
         project_type = os.environ["PROJECT_TYPE"]
-        if project_type == 'PRODUCTION':
-            config_mqtt()
-            config_sensor_registry()
-        elif project_type == 'MCSTATUS':
-            mcstatus_path()
-        elif project_type == 'ALARMLIST':
-            alarmlist_path()
+        init_project = os.environ["INIT_PROJECT"]
+
+        if init_project == "True": 
+            if project_type == 'PRODUCTION':
+                config_mqtt_add()
+                config_mqtt_delete()
+                config_sensor_registry_add()
+                config_sensor_registry_delete()
+            elif project_type == 'MCSTATUS':
+                mcstatus_path()
+            elif project_type == 'ALARMLIST':
+                alarmlist_path()
+            else:
+                st.error('ERROR: UNKNOWN PROJECT TYPE!', icon="❌")
         else:
-            st.error('ERROR: UNKNOWN PROJECT TYPE!', icon="❌")
+            st.error('NOT INITIAL A PROJECT YET', icon="❌")
 
     with tab2:
         config_db_connect("SQLSERVER")
