@@ -115,6 +115,7 @@ def config_project():
     project_name = str(os.environ["TABLE"]).split("_")[-1]
     table_name = str(os.environ["TABLE"])
     table_log_name = str(os.environ["TABLE_LOG"])
+    init_db = str(os.environ["INITIAL_DB"])
 
     with st.form("config_project"):
 
@@ -125,7 +126,8 @@ def config_project():
 
             project_type_list = list(str(os.environ["PROJECT_TYPE_LIST"]).split(","))
             indexs= project_type_list.index(os.environ["PROJECT_TYPE"])
-            project_type_value = st.selectbox("Project type",project_type_list,placeholder="select project type...",index=indexs)
+            if init_db == 'False':
+                project_type_value = st.selectbox("Project type",project_type_list,placeholder="select project type...",index=indexs)
 
         submitted = st.form_submit_button("INITIAL")
         if submitted:
@@ -246,7 +248,7 @@ def config_sensor_registry_add():
                         sensor_value = sensor_registry[i]
                     else:
                         sensor_value = str(sensor_value)+","+sensor_registry[i]
-                    table_column_value = table_column_value+","+sensor_registry[i] + " varchar(10)"
+                    table_column_value = table_column_value+","+sensor_registry[i] + " float"
 
                 os.environ["TABLE_COLUMNS"] = table_column_value
                 os.environ["COLUMN_NAMES"] = sensor_value
@@ -397,7 +399,9 @@ def config_initdb():
                         drop_table(st,os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE"])
                         drop_table(st,os.environ["SERVER"],os.environ["USER_LOGIN"],os.environ["PASSWORD"],os.environ["DATABASE"],os.environ["TABLE_LOG"])
                         os.environ["INITIAL_DB"] = "False"
+                        os.environ["INIT_PROJECT"] = "False"
                         dotenv.set_key(dotenv_file,"INITIAL_DB",os.environ["INITIAL_DB"])
+                        dotenv.set_key(dotenv_file,"INIT_PROJECT",os.environ["INIT_PROJECT"])
                         st.success('Deleted!', icon="✅")
                         time.sleep(0.5)
                         st.experimental_rerun()
