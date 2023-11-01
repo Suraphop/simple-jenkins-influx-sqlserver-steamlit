@@ -771,7 +771,7 @@ def main_layout():
     elif t == "":
         pass
     else:
-        st.error('PASSWORD NOT CORRECT', icon="❌")
+        st.toast('PASSWORD NOT CORRECT!', icon='❌')
             
 if __name__ == "__main__":
     dotenv_file = dotenv.find_dotenv()
