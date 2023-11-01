@@ -686,83 +686,93 @@ def main_layout():
 
     st.title("MACHINE DATA TO DB CONFIG")
 
-    tab1, tab2 , tab3 ,tab4 , tab5 , tab6 , tab7 = st.tabs(["⚙️ PROJECT CONFIG", "🔑 DB CONNECTION", "📂 DB CREATE", "🔔 ALERT", "🔍 DATAFLOW PREVIEW","📝LOG","🕞SCHEDULE"])
-    
-    with tab1:
-        config_project()
-        project_type = os.environ["PROJECT_TYPE"]
-        init_project = os.environ["INIT_PROJECT"]
+    text_input_container = st.empty()
+    t = text_input_container.text_input("Input password", type="password")
 
-        if init_project == "True": 
-            if project_type == 'PRODUCTION':
-                config_mqtt_add()
-                config_mqtt_delete()
-                config_sensor_registry_add()
-                config_sensor_registry_delete()
-            elif project_type == 'MCSTATUS':
-                mcstatus_path()
-            elif project_type == 'ALARMLIST':
-                alarmlist_path()
-            else:
-                st.error('ERROR: UNKNOWN PROJECT TYPE!', icon="❌")
-        else:
-            st.error('NOT INITIAL A PROJECT YET', icon="❌")
-
-    with tab2:
-        config_db_connect("SQLSERVER")
-        if os.environ["PROJECT_TYPE"] == 'PRODUCTION':
-            config_db_connect("INFLUXDB")
-
-    with tab3:
-        config_initdb()
-
-    with tab4:
-        line_alert()
-
-    with tab5:
-            st.header("DATAFLOW PREVIEW")
-            if project_type == 'PRODUCTION':
-                dataflow_production_mqtt()
-                dataflow_production_influx()
-                dataflow_test()
-                dataflow_production_sql()
-
-            elif project_type == 'MCSTATUS':
-                dataflow_mcstatus_file()
-                dataflow_test()
-                dataflow_mcstatus_sql()
-                
-            elif project_type == 'ALARMLIST':
-                dataflow_alarmlist_file()
-                dataflow_test()
-                dataflow_alarmlist_sql()
-
-    with tab6:
-        logging()
-
-    with tab7:
-        crontab_value = st.selectbox('Select Schedule',('Every 1 minute', 'Hourly'))
-        crontab_but = st.button("SUBMIT")
+    if t == "mic@admin":
+        text_input_container.empty()
+         
+        tab1, tab2 , tab3 ,tab4 , tab5 , tab6 , tab7 = st.tabs(["⚙️ PROJECT CONFIG", "🔑 DB CONNECTION", "📂 DB CREATE", "🔔 ALERT", "🔍 DATAFLOW PREVIEW","📝LOG","🕞SCHEDULE"])
         
-        st.markdown("---")
-        st.subheader("READ CRONTAB")
-        st.markdown("---")
-        st.write(crontab_read())
-        st.markdown("---")
-        if crontab_but:
-                if crontab_value == 'Every 1 minute':
-                    crontab_delete()
-                    crontab_every_minute()
-                    subprocess.call(['sh', './run_crontab.sh'])
-                    st.experimental_rerun()
-                elif crontab_value == 'Hourly':
-                    crontab_delete()
-                    crontab_every_hr()
-                    subprocess.call(['sh', './run_crontab.sh'])
-                    st.experimental_rerun()
+        with tab1:
+            config_project()
+            project_type = os.environ["PROJECT_TYPE"]
+            init_project = os.environ["INIT_PROJECT"]
+
+            if init_project == "True": 
+                if project_type == 'PRODUCTION':
+                    config_mqtt_add()
+                    config_mqtt_delete()
+                    config_sensor_registry_add()
+                    config_sensor_registry_delete()
+                elif project_type == 'MCSTATUS':
+                    mcstatus_path()
+                elif project_type == 'ALARMLIST':
+                    alarmlist_path()
                 else:
-                    st.error("Error: crontab unknown")
-        
+                    st.error('ERROR: UNKNOWN PROJECT TYPE!', icon="❌")
+            else:
+                st.error('NOT INITIAL A PROJECT YET', icon="❌")
+
+        with tab2:
+            config_db_connect("SQLSERVER")
+            if os.environ["PROJECT_TYPE"] == 'PRODUCTION':
+                config_db_connect("INFLUXDB")
+
+        with tab3:
+            config_initdb()
+
+        with tab4:
+            line_alert()
+
+        with tab5:
+                st.header("DATAFLOW PREVIEW")
+                if project_type == 'PRODUCTION':
+                    dataflow_production_mqtt()
+                    dataflow_production_influx()
+                    dataflow_test()
+                    dataflow_production_sql()
+
+                elif project_type == 'MCSTATUS':
+                    dataflow_mcstatus_file()
+                    dataflow_test()
+                    dataflow_mcstatus_sql()
+                    
+                elif project_type == 'ALARMLIST':
+                    dataflow_alarmlist_file()
+                    dataflow_test()
+                    dataflow_alarmlist_sql()
+
+        with tab6:
+            logging()
+
+        with tab7:
+            crontab_value = st.selectbox('Select Schedule',('Every 1 minute', 'Hourly'))
+            crontab_but = st.button("SUBMIT")
+            
+            st.markdown("---")
+            st.subheader("READ CRONTAB")
+            st.markdown("---")
+            st.write(crontab_read())
+            st.markdown("---")
+            if crontab_but:
+                    if crontab_value == 'Every 1 minute':
+                        crontab_delete()
+                        crontab_every_minute()
+                        subprocess.call(['sh', './run_crontab.sh'])
+                        st.experimental_rerun()
+                    elif crontab_value == 'Hourly':
+                        crontab_delete()
+                        crontab_every_hr()
+                        subprocess.call(['sh', './run_crontab.sh'])
+                        st.experimental_rerun()
+                    else:
+                        st.error("Error: crontab unknown")
+    elif t == "":
+        pass
+    else:
+        st.error('PASSWORD NOT CORRECT', icon="❌")
+            
 if __name__ == "__main__":
     dotenv_file = dotenv.find_dotenv()
     dotenv.load_dotenv(dotenv_file)
