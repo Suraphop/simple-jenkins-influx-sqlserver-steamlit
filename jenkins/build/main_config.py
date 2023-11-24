@@ -296,6 +296,7 @@ def config_sensor_registry_delete():
                             sensor_value = sensor_registry[i]
                         else:
                             sensor_value = str(sensor_value)+","+sensor_registry[i]
+                        table_column_value = table_column_value+","+sensor_registry[i] + " float"
 
                     os.environ["TABLE_COLUMNS"] = table_column_value
                     os.environ["COLUMN_NAMES"] = sensor_value
